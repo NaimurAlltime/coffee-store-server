@@ -2,7 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const app = express();
 require('dotenv').config();
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 
 const port = process.env.PORT || 5000;
 
@@ -30,11 +30,56 @@ async function run() {
 
     const coffeeCollection = client.db("coffeeDB").collection("coffee");
 
+    // get api 
+    app.get('/coffee', async(req, res) => {
+      const cursor = coffeeCollection.find();
+      const result = await cursor.toArray();
+      res.send(result)
+    })
+
     // post api 
     app.post('/coffee', async(req, res) => {
       const newCoffee = req.body;
       console.log(newCoffee);
       const result = await coffeeCollection.insertOne(newCoffee)
+      res.send(result);
+    })
+
+    // get api with specific id 
+    app.get('/coffee/:id', async(req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await coffeeCollection.findOne(query);
+      res.send(result);
+    })
+
+    // put api (update)
+    app.put('/coffee/:id', async(req, res) => {
+      const id = req.params.id;
+      const coffee = req.body;
+      console.log(id, coffee);
+      const filter = {_id: new ObjectId(id)};
+      const options = { upsert: true };
+      const updatedCoffee = {
+        $set: {
+          coffeeName: coffee.coffeeName,
+          quantity: coffee.quantity,
+          supplier: coffee.supplier,
+          taste: coffee.taste,
+          category: coffee.category,
+          details: coffee.details,
+          photo: coffee.photo
+        }
+      }
+      const result = await coffeeCollection.updateOne(filter, updatedCoffee, options);
+      res.send(result);
+    })
+
+    // delete api 
+    app.delete('/coffee/:id', async(req, res) => {
+      const id = req.params.id;
+      const query = {_id: new ObjectId(id)};
+      const result = await coffeeCollection.deleteOne(query);
       res.send(result);
     })
 
